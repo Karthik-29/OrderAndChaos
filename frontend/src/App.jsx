@@ -8,6 +8,23 @@ function emptyBoard() {
     );
 }
 
+async function evaluateBoard(board) {
+    const res = await fetch("http://localhost:8787/evaluate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ board }),
+    });
+
+    if (!res.ok) {
+        throw new Error("Failed to evaluate board");
+    }
+
+    return res.json();
+}
+
+
 export default function App() {
     const [board, setBoard] = useState(emptyBoard);
     // history now stores only the last moves as diffs:
@@ -15,14 +32,15 @@ export default function App() {
     const [history, setHistory] = useState([]);
     const [currentPlayer, setCurrentPlayer] = useState("ORDER");
     const [selectedSymbol, setSelectedSymbol] = useState("❌");
+    const [gameState, setGameState] = useState("ONGOING"); // "ONGOING", "ORDER_WINS", "CHAOS_WINS"
 
-    function handleClick(row, col) {
+    async function handleClick(row, col) {
         if (board[row][col] !== null) return;
 
         // push only the minimal undo info for this move
         setHistory((prev) => [
             ...prev,
-            { row, col, prevValue: board[row][col], previousPlayer: currentPlayer },
+            {row, col, prevValue: board[row][col], previousPlayer: currentPlayer},
         ]);
 
         const next = board.map((r, i) =>
@@ -31,6 +49,22 @@ export default function App() {
 
         setBoard(next);
         setCurrentPlayer((p) => (p === "ORDER" ? "CHAOS" : "ORDER"));
+
+        try {
+            const result = await evaluateBoard(next);
+
+            if (result.state === "ORDER_WINS") {
+                console.log("Order wins");
+                // show modal / disable board / etc.
+            } else if (result.state === "CHAOS_WINS") {
+                console.log("Chaos wins");
+            }
+            setGameState(result.state);
+
+        } catch (err) {
+            console.error(err);
+        }
+
     }
 
     function handleUndo() {
@@ -114,6 +148,9 @@ export default function App() {
                     ))
                 )}
             </div>
+            <p>
+                Game status: <strong>{gameState}</strong>
+            </p>
         </div>
     );
 }
