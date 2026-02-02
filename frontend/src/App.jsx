@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { evaluateGame } from "./utils/gameEvaluator.js";
 
 const SIZE = 5;
 
@@ -6,22 +7,6 @@ function emptyBoard() {
     return Array.from({ length: SIZE }, () =>
         Array.from({ length: SIZE }, () => null)
     );
-}
-
-async function evaluateBoard(board) {
-    const res = await fetch("http://localhost:8787/evaluate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ board }),
-    });
-
-    if (!res.ok) {
-        throw new Error("Failed to evaluate board");
-    }
-
-    return res.json();
 }
 
 
@@ -51,7 +36,7 @@ export default function App() {
         setCurrentPlayer((p) => (p === "ORDER" ? "CHAOS" : "ORDER"));
 
         try {
-            const result = await evaluateBoard(next);
+            const result = evaluateGame(next);
 
             if (result.state === "ORDER_WINS") {
                 console.log("Order wins");
