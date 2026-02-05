@@ -4,15 +4,16 @@ import { encodeState } from '../utils/inference.js';
 import path from 'path';
 
 // Integration test: load the real ONNX model and run inference once.
+// Something is off, always gives the same value
 describe('inference integration (real ONNX model)', () => {
   it('loads model and returns policy and value with expected shapes', async () => {
     // Build a simple board
     const board = [
-      [null,null,null,null,null],
-      [null,'❌',null,null,null],
-      [null,null,'❌',null,null],
-      [null,null,null,'❌',null],
-      [null,null,null,null,null]
+      ['❌','❌','❌',null,'⭕'],
+      ['⭕','⭕','⭕','❌',null],
+      [null,'❌','⭕','⭕',null],
+        [null,null,'❌','❌',null],
+      [null,'⭕',null,'❌',null]
     ];
 
     // Absolute path to the ONNX model in frontend/public
@@ -21,7 +22,7 @@ describe('inference integration (real ONNX model)', () => {
     // Create session using the wasm execution provider
     const session = await InferenceSession.create(modelPath, { executionProviders: ['wasm'] });
 
-    const inputData = encodeState(board, 'ORDER');
+    const inputData = encodeState(board, 'CHAOS');
     const tensor = new Tensor('float32', inputData, [1, 4, 5, 5]);
 
     const outputs = await session.run({ board: tensor });
