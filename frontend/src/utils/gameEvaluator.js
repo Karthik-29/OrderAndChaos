@@ -3,14 +3,6 @@
 const BOARD_SIZE = 5
 const WIN_LENGTH = 4
 
-/**
- * @typedef {"ORDER_WINS" | "CHAOS_WINS" | "ONGOING"} GameState
- */
-
-/**
- * @param {(string|null)[][]} board
- * @returns {{ state: GameState }}
- */
 export function evaluateGame(board) {
     if (hasFourInARow(board)) {
         // Only ORDER can win by forming a line
@@ -24,18 +16,10 @@ export function evaluateGame(board) {
     return { state: "ONGOING" }
 }
 
-/**
- * @param {(string|null)[][]} board
- * @returns {boolean}
- */
 function isBoardFull(board) {
     return board.every(row => row.every(cell => cell !== null))
 }
 
-/**
- * @param {(string|null)[][]} board
- * @returns {boolean}
- */
 function hasFourInARow(board) {
     const directions = [
         [0, 1],   // horizontal
@@ -60,15 +44,6 @@ function hasFourInARow(board) {
     return false
 }
 
-/**
- * @param {(string|null)[][]} board
- * @param {number} row
- * @param {number} col
- * @param {number} dr
- * @param {number} dc
- * @param {string} symbol
- * @returns {boolean}
- */
 function checkDirection(board, row, col, dr, dc, symbol) {
     for (let k = 1; k < WIN_LENGTH; k++) {
         const nr = row + dr * k
@@ -85,3 +60,5 @@ function checkDirection(board, row, col, dr, dc, symbol) {
 
     return true
 }
+
+

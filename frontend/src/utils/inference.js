@@ -1,8 +1,11 @@
 import { InferenceSession, Tensor } from "onnxruntime-web";
+import {OrderChaosGame} from "./OrderChaosGame.js";
 
 
-export function encodeState(board, currentPlayer) {
-    const size = 5;
+export function encodeState(game = new OrderChaosGame()) {
+    const size = game.boardSize
+    const board = game.board
+    const currentPlayer = game.currentPlayer;
 
     const xPlane = new Float32Array(size * size);
     const oPlane = new Float32Array(size * size);
@@ -41,18 +44,16 @@ export function encodeState(board, currentPlayer) {
 
 let session = null;
 
-export async function loadModel()
+export async function loadModel(modelPath)
 {
     if (session) return session;
-    const modelPath = `${import.meta.env.BASE_URL}maxwells_demon.onnx`;
     session = await InferenceSession.create(modelPath, { executionProviders: ["wasm"] });
     return session;
 }
 
-
-export async function runInference(inputArray, currentPlayer) {
-    const inputData = encodeState(inputArray, currentPlayer);
-    const session = await loadModel();
+export async function runInference(game = new OrderChaosGame(), modelPath) {
+    const inputData = encodeState(game);
+    const session = await loadModel(modelPath);
     const tensor = new Tensor( "float32", inputData, [1, 4, 5, 5] );
     return await session.run({ board: tensor });
 }
