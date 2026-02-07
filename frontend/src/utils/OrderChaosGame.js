@@ -30,12 +30,12 @@ export class OrderChaosGame {
     }
 
     actionToIndex(row, col, symbol){
-        const sym = symbol === ""? 1 : 0;
+        const sym = symbol === "❌"? 1 : 0;
         return 10*row + 2*col + sym
     }
 
     indexToAction(action_index) {
-        const row = Math.floor(action_index / 2*this.boardSize);
+        const row = Math.floor(action_index / (2*this.boardSize));
         const col = Math.floor((action_index % (2*this.boardSize)) / 2);
         const symbol = action_index % 2 === 0 ? "❌" : "⭕";
         return {row, col, symbol};

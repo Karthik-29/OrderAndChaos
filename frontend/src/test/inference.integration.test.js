@@ -19,7 +19,7 @@ describe('inference integration (real ONNX model)', () => {
 
     const game = new OrderChaosGame();
       game.board = board
-      game.currentPlayer = game.board
+      game.currentPlayer = "ORDER";
 
     // Absolute path to the ONNX model in frontend/public
     const modelPath = path.resolve(process.cwd(), 'public', 'maxwells_demon.onnx');

@@ -55,8 +55,7 @@ export async function runMCTS(rootGame = new OrderChaosGame(), numSimulations=10
         let isTerminal = game.terminal();
         if (isTerminal.isTerminal) {
             value = isTerminal.state === "ORDER_WINS" ? 1 : -1;
-        }
-        else {
+        } else {
             // Evaluation
             const inferenceResult = await runInference(game, modelPath);
             value = inferenceResult.value.data[0];
@@ -75,8 +74,8 @@ export async function runMCTS(rootGame = new OrderChaosGame(), numSimulations=10
             }
         }
 
-        // backprop
-        for (const n of path.reverse()){
+        // backup
+        for (const n of path.reverse()) {
             n.N += 1
             n.W += value
             value = -value
@@ -84,23 +83,23 @@ export async function runMCTS(rootGame = new OrderChaosGame(), numSimulations=10
 
         root.N += 1
         root.W += value
-
-        let pi =  new Array(50).fill(0.0);
-        for (const a in root.children){
-            pi[a] = root.children[a].N
-        }
-
-        pi = normalizeArray(pi)
-
-        let argmax = -1
-        let maxVal = -1
-        for (let i = 1; i < pi.length; i++){
-            if (pi[i] >= maxVal) {
-                maxVal = pi[i]
-                argmax = i
-            }
-        }
-        return argmax;
     }
 
+    // Imporoved policy
+    let pi =  new Array(50).fill(0.0);
+    for (const [actionIndex, child] of root.children) {
+        pi[actionIndex] = child.N;
+    }
+
+    pi = normalizeArray(pi)
+
+    let argmax = -1
+    let maxVal = -1
+    for (let i = 0; i < pi.length; i++){
+        if (pi[i] >= maxVal) {
+            maxVal = pi[i]
+            argmax = i
+        }
+    }
+    return argmax;
 }
