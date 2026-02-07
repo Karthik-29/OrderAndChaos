@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { evaluateGame } from "./utils/gameEvaluator.js";
+import { runMCTS } from "./utils/runMCTS.js";
+import { OrderChaosGame } from "./utils/OrderChaosGame.js";
 
 const SIZE = 5;
+const HUMAN_PLAYER = "CHAOS";
+const AI_PLAYER = "ORDER";
+const X_SYMBOL = "\u274C";
+const O_SYMBOL = "\u2B55";
 
 function emptyBoard() {
     return Array.from({ length: SIZE }, () =>
@@ -9,62 +15,102 @@ function emptyBoard() {
     );
 }
 
+function cloneBoard(board) {
+    return board.map((row) => row.slice());
+}
 
 export default function App() {
     const [board, setBoard] = useState(emptyBoard);
-    // history now stores only the last moves as diffs:
+    // history stores moves as diffs:
     // { row: number, col: number, prevValue: string|null, previousPlayer: "ORDER"|"CHAOS" }
     const [history, setHistory] = useState([]);
     const [currentPlayer, setCurrentPlayer] = useState("ORDER");
-    const [selectedSymbol, setSelectedSymbol] = useState("❌");
-    const [gameState, setGameState] = useState("ONGOING"); // "ONGOING", "ORDER_WINS", "CHAOS_WINS"
+    const [selectedSymbol, setSelectedSymbol] = useState(X_SYMBOL);
+    const [gameState, setGameState] = useState("ONGOING");
+    const [isAiThinking, setIsAiThinking] = useState(false);
+
+    async function runAiTurn(currentBoard) {
+        try {
+            setIsAiThinking(true);
+
+            const aiGame = new OrderChaosGame();
+            aiGame.board = cloneBoard(currentBoard);
+            aiGame.currentPlayer = AI_PLAYER;
+
+            const aiActionIndex = await runMCTS(aiGame);
+            const { row: aiRow, col: aiCol, symbol: aiSymbol } = aiGame.indexToAction(aiActionIndex);
+
+            if (currentBoard[aiRow][aiCol] !== null) {
+                throw new Error("AI selected an invalid move");
+            }
+
+            const afterAiMove = currentBoard.map((r, i) =>
+                r.map((cell, j) => (i === aiRow && j === aiCol ? aiSymbol : cell))
+            );
+
+            setHistory((prev) => [
+                ...prev,
+                { row: aiRow, col: aiCol, prevValue: currentBoard[aiRow][aiCol], previousPlayer: AI_PLAYER },
+            ]);
+            setBoard(afterAiMove);
+            setCurrentPlayer(HUMAN_PLAYER);
+
+            const aiResult = evaluateGame(afterAiMove);
+            setGameState(aiResult.state);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsAiThinking(false);
+        }
+    }
 
     async function handleClick(row, col) {
+        if (isAiThinking) return;
+        if (gameState !== "ONGOING") return;
+        if (currentPlayer !== HUMAN_PLAYER) return;
         if (board[row][col] !== null) return;
-
-        // push only the minimal undo info for this move
-        setHistory((prev) => [
-            ...prev,
-            {row, col, prevValue: board[row][col], previousPlayer: currentPlayer},
-        ]);
 
         const next = board.map((r, i) =>
             r.map((cell, j) => (i === row && j === col ? selectedSymbol : cell))
         );
 
+        setHistory((prev) => [
+            ...prev,
+            { row, col, prevValue: board[row][col], previousPlayer: currentPlayer },
+        ]);
         setBoard(next);
-        setCurrentPlayer((p) => (p === "ORDER" ? "CHAOS" : "ORDER"));
 
-        try {
-            const result = evaluateGame(next);
-
-            if (result.state === "ORDER_WINS") {
-                console.log("Order wins");
-                // show modal / disable board / etc.
-            } else if (result.state === "CHAOS_WINS") {
-                console.log("Chaos wins");
-            }
-            setGameState(result.state);
-
-        } catch (err) {
-            console.error(err);
+        const humanResult = evaluateGame(next);
+        setGameState(humanResult.state);
+        if (humanResult.state !== "ONGOING") {
+            return;
         }
 
+        setCurrentPlayer(AI_PLAYER);
     }
 
+    useEffect(() => {
+        if (currentPlayer !== AI_PLAYER) return;
+        if (gameState !== "ONGOING") return;
+        if (isAiThinking) return;
+        void runAiTurn(board);
+    }, [board, currentPlayer, gameState, isAiThinking]);
+
     function handleUndo() {
+        if (isAiThinking) return;
+
         setHistory((prev) => {
             if (prev.length === 0) return prev;
             const last = prev[prev.length - 1];
             const newHistory = prev.slice(0, -1);
 
-            // restore only the changed cell and the previous player
             setBoard((b) => {
                 const copy = b.map((r) => r.slice());
                 copy[last.row][last.col] = last.prevValue;
                 return copy;
             });
             setCurrentPlayer(last.previousPlayer);
+            setGameState("ONGOING");
 
             return newHistory;
         });
@@ -76,11 +122,15 @@ export default function App() {
             <p>
                 Turn: <strong>{currentPlayer}</strong>
             </p>
+            <p>
+                You are <strong>{HUMAN_PLAYER}</strong>. AI is <strong>{AI_PLAYER}</strong>.
+                {isAiThinking ? " AI is thinking..." : ""}
+            </p>
 
             <div style={{ marginBottom: 12 }}>
                 <button
                     onClick={handleUndo}
-                    disabled={history.length === 0}
+                    disabled={history.length === 0 || isAiThinking}
                     style={{ marginRight: 12 }}
                 >
                     Undo
@@ -88,21 +138,23 @@ export default function App() {
 
                 <span>Symbol: </span>
                 <button
-                    onClick={() => setSelectedSymbol("❌")}
+                    onClick={() => setSelectedSymbol(X_SYMBOL)}
+                    disabled={isAiThinking || currentPlayer !== HUMAN_PLAYER || gameState !== "ONGOING"}
                     style={{
-                        fontWeight: selectedSymbol === "❌" ? "bold" : "normal",
+                        fontWeight: selectedSymbol === X_SYMBOL ? "bold" : "normal",
                         marginRight: 6,
                     }}
                 >
-                    ❌
+                    {X_SYMBOL}
                 </button>
                 <button
-                    onClick={() => setSelectedSymbol("⭕")}
+                    onClick={() => setSelectedSymbol(O_SYMBOL)}
+                    disabled={isAiThinking || currentPlayer !== HUMAN_PLAYER || gameState !== "ONGOING"}
                     style={{
-                        fontWeight: selectedSymbol === "⭕" ? "bold" : "normal",
+                        fontWeight: selectedSymbol === O_SYMBOL ? "bold" : "normal",
                     }}
                 >
-                    ⭕
+                    {O_SYMBOL}
                 </button>
             </div>
 
@@ -118,6 +170,12 @@ export default function App() {
                         <button
                             key={`${i}-${j}`}
                             onClick={() => handleClick(i, j)}
+                            disabled={
+                                isAiThinking ||
+                                gameState !== "ONGOING" ||
+                                currentPlayer !== HUMAN_PLAYER ||
+                                cell !== null
+                            }
                             style={{
                                 width: 60,
                                 height: 60,
@@ -125,7 +183,13 @@ export default function App() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                cursor: "pointer",
+                                cursor:
+                                    isAiThinking ||
+                                    gameState !== "ONGOING" ||
+                                    currentPlayer !== HUMAN_PLAYER ||
+                                    cell !== null
+                                        ? "not-allowed"
+                                        : "pointer",
                             }}
                         >
                             {cell}
