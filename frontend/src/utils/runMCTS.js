@@ -52,9 +52,11 @@ export async function runMCTS(rootGame = new OrderChaosGame(), numSimulations=10
             path.push(node);
         }
 
+
+
         let isTerminal = game.terminal();
         if (isTerminal.isTerminal) {
-            value = isTerminal.state === "ORDER_WINS" ? 1 : -1;
+            value = isTerminal.state === "ORDER_WINS" ? (game.currentPlayer === "ORDER" ? 1 : -1) : (game.currentPlayer === "CHAOS" ? 1 : -1);
         } else {
             // Evaluation
             const inferenceResult = await runInference(game, modelPath);
