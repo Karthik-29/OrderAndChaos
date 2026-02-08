@@ -5,7 +5,7 @@ import { OrderChaosGame } from "./utils/OrderChaosGame.js";
 
 const SIZE = 5;
 const HUMAN_PLAYER = "CHAOS";
-const AI_PLAYER = "ORDER";
+const AI_PLAYER = HUMAN_PLAYER === "ORDER" ? "CHAOS" : "ORDER";
 const X_SYMBOL = "\u274C";
 const O_SYMBOL = "\u2B55";
 
