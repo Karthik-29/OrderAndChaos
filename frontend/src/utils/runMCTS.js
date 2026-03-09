@@ -1,147 +1,161 @@
 import { OrderChaosGame } from './OrderChaosGame';
-import { runInference} from "./inference.js";
+import { runInference } from "./inference.js";
 
 class MCTSNode {
     constructor(prior, parent = null, game = new OrderChaosGame(), action = null) {
         this.P = prior;
         this.parent = parent;
         this.visits = 0;
-        this.wins = 0.0;
-        this.children = [];
+        this.valueSum = 0.0;
+        this.children = new Map();
         this.game = game;
         this.action = action;
-        this.untriedActions = this.game.legalActions();
     }
 
     get Q() {
-        return this.visits === 0 ? 0 : this.wins / this.visits;
+        return this.visits === 0 ? 0 : this.valueSum / this.visits;
     }
 
-    isFullyExpanded() {
-        return this.untriedActions.length === 0;
-    }
-
-    expand() {
-        const action = this.untriedActions.pop();
-        const gameCopy = this.game.clone();
-        gameCopy.applyAction(action);
-        const childNode = new MCTSNode(0, this, gameCopy, action);
-        this.children.push(childNode);
-        return childNode;
+    isLeaf() {
+        return this.children.size === 0;
     }
 
     bestChild(c_puct = 1.0) {
-        for (const child of this.children) {
-            if (child.visits === 0) {
+        const currentPlayer = this.game.getCurrentPlayer();
+
+        // Tactical short-circuit: if a child is an immediate win for side-to-move, pick it.
+        for (const child of this.children.values()) {
+            const { terminal, winner } = child.game.isTerminal();
+            if (terminal && winner === currentPlayer) {
                 return child;
             }
         }
 
-        let best = this.children[0];
         let bestScore = -Infinity;
-        for (const child of this.children) {
-            const score = child.Q + c_puct * child.P * Math.sqrt(this.visits) / (1 + child.visits);
+        let bestChild = null;
+
+        for (const child of this.children.values()) {
+            const u = c_puct * child.P *
+                Math.sqrt(this.visits) / (1 + child.visits);
+
+            const score = -child.Q + u;
+
             if (score > bestScore) {
                 bestScore = score;
-                best = child;
+                bestChild = child;
             }
         }
-        return best;
+
+        return bestChild;
     }
 
-    async rollout(modelPath) {
-        const game = this.game.clone();
+    async expand(modelPath) {
+        const inference = await runInference(this.game, modelPath);
+        let policy = Array.from(inference.policy.data);
+        const value = inference.value.data[0]; // scalar
 
-        while (true) {
-            const terminal = game.terminal();
-            if (terminal.isTerminal) {
-                return terminal.state === "ORDER_WINS" ? "ORDER" : "CHAOS";
-            }
+        const legal = this.game.legalActions();
 
-            const inferenceResult = await runInference(game, modelPath);
-            let policy = Array.from(inferenceResult.policy.data);
-
-            const legalActions = game.legalActions();
-            const legalActionsMask = new Array(policy.length).fill(false);
-            for (const actionIndex of legalActions) {
-                legalActionsMask[actionIndex] = true;
-            }
-
-            for (let i = 0; i < policy.length; i++) {
-                if (!legalActionsMask[i]) {
-                    policy[i] = 0;
-                }
-            }
-
-            const policySum = policy.reduce((a, b) => a + b, 0);
-            if (policySum > 0) {
-                policy = policy.map(x => x / policySum);
-            }
-
-            let actionIndex = 0;
-            let maxVal = -Infinity;
-            for (let i = 0; i < policy.length; i++) {
-                if (policy[i] > maxVal) {
-                    maxVal = policy[i];
-                    actionIndex = i;
-                }
-            }
-
-            game.applyAction(actionIndex);
+        // Mask illegal moves
+        for (let i = 0; i < policy.length; i++) {
+            if (!legal.includes(i)) policy[i] = 0;
         }
+
+        policy = normalizeArray(policy);
+
+        for (const action of legal) {
+            const gameCopy = this.game.clone();
+            gameCopy.applyAction(action);
+
+            const child = new MCTSNode(
+                policy[action],
+                this,
+                gameCopy,
+                action
+            );
+
+            this.children.set(action, child);
+        }
+
+        return value;
     }
 
-    backup(winner) {
+    backpropagate(value) {
         this.visits += 1;
-        this.wins += winner === this.game.currentPlayer ? 1 : -1;
+        this.valueSum += value;
 
         if (this.parent) {
-            this.parent.backup(winner);
+            this.parent.backpropagate(-value);
         }
     }
 }
 
-function normalizeArray(arr){
-    let sum = arr.reduce((a, b) => a + b, 0);
-    if (sum > 0) {
-        arr = arr.map(x => x/sum)
+function normalizeArray(arr) {
+    const sum = arr.reduce((a, b) => a + b, 0);
+
+    if (sum <= 0) {
+        const uniform = 1 / arr.length;
+        return arr.map(() => uniform);
     }
-    return arr
+
+    return arr.map(x => x / sum);
 }
 
-export async function runMCTS(rootGame = new OrderChaosGame(), numSimulations=100, c_puct=1, modelPath = `${import.meta.env.BASE_URL}maxwells_demon.onnx`) {
+export async function runMCTS(
+    rootGame = new OrderChaosGame(),
+    numSimulations = 500,
+    c_puct = 1.0,
+    modelPath = `${import.meta.env.BASE_URL}maxwells_demon.onnx?v=${import.meta.env.VITE_MODEL_VERSION ?? "dev"}`
+) {
     const root = new MCTSNode(1.0, null, rootGame);
 
     for (let i = 0; i < numSimulations; i++) {
         let node = root;
 
-        while (!node.game.terminal().isTerminal && node.isFullyExpanded()) {
+        // ---- Selection ----
+        while (!node.isLeaf()) {
+            const terminal = node.game.isTerminal();
+            if (terminal.terminal) break;
+
             node = node.bestChild(c_puct);
         }
 
-        if (!node.game.terminal().isTerminal && !node.isFullyExpanded()) {
-            node = node.expand();
+        // ---- Evaluation / Expansion ----
+        const { terminal, winner } = node.game.isTerminal();
+
+        let value;
+
+        if (terminal) {
+            const currentPlayer = node.game.getCurrentPlayer();
+            value = (winner === currentPlayer) ? 1 : -1;
+        } else {
+            value = await node.expand(modelPath);
         }
 
-        const winner = await node.rollout(modelPath);
-        node.backup(winner);
+        // ---- Backprop ----
+        node.backpropagate(value);
     }
 
-    // Improved policy
-    let pi =  new Array(50).fill(0.0);
-    for (const child of root.children) {
-        pi[child.action] = root.visits === 0 ? 0 : child.visits / root.visits;
+// ---- Build policy from visit counts ----
+    const pi = new Array(50).fill(0.0);
+
+    for (const [action, child] of root.children.entries()) {
+        pi[action] = child.visits;
     }
 
-    pi = normalizeArray(pi)
+    const normalized = normalizeArray(pi);
 
-    let argmax = -1
-    let maxVal = -1
-    for (let i = 0; i < pi.length; i++){
-        if (pi[i] >= maxVal) {
-            maxVal = pi[i]
-            argmax = i
+// Pick argmax
+    let bestAction = 0;
+    let bestValue = -Infinity;
+
+    for (let i = 0; i < normalized.length; i++) {
+        if (normalized[i] > bestValue) {
+            bestValue = normalized[i];
+            bestAction = i;
         }
     }
-    return argmax;
+
+    return bestAction;
 }
+

@@ -3,56 +3,78 @@ import { evaluateGame } from "./gameEvaluator"
 export class OrderChaosGame {
     constructor() {
         this.boardSize = 5;
-        this.board = Array.from({length: this.boardSize}, () =>
-            Array.from({length: this.boardSize}, () => null)
+        this.board = Array.from({ length: this.boardSize }, () =>
+            Array.from({ length: this.boardSize }, () => null)
         );
-        this.currentPlayer = "ORDER";
+
+        // 1 = ORDER, -1 = CHAOS
+        this.player = 1;
     }
 
     clone() {
         const newGame = new OrderChaosGame();
         newGame.board = this.board.map(row => row.slice());
-        newGame.currentPlayer = this.currentPlayer;
+        newGame.player = this.player;
         return newGame;
     }
 
+    getCurrentPlayer() {
+        return this.player;   // 1 or -1
+    }
+
     legalActions() {
-        const actions = []
+        const actions = [];
         for (let r = 0; r < this.boardSize; r++) {
             for (let c = 0; c < this.boardSize; c++) {
                 if (this.board[r][c] === null) {
-                    actions.push(this.actionToIndex(r,c, '❌'))
-                    actions.push(this.actionToIndex(r,c, '⭕'))
+                    actions.push(this.actionToIndex(r, c, "❌"));
+                    actions.push(this.actionToIndex(r, c, "⭕"));
                 }
             }
         }
-        return actions
+        return actions;
     }
 
-    actionToIndex(row, col, symbol){
-        const sym = symbol === "❌"? 1 : 0;
-        return 10*row + 2*col + sym
+    actionToIndex(row, col, symbol) {
+        // symbol: "❌" = +1, "⭕" = 0
+        const sym = symbol === "❌" ? 0 : 1;
+        return row * 10 + col * 2 + sym;
     }
 
     indexToAction(action_index) {
-        const row = Math.floor(action_index / (2*this.boardSize));
-        const col = Math.floor((action_index % (2*this.boardSize)) / 2);
+        const row = Math.floor(action_index / 10);
+        const col = Math.floor((action_index % 10) / 2);
+
+        // even → +1 → ❌
         const symbol = action_index % 2 === 0 ? "❌" : "⭕";
-        return {row, col, symbol};
+
+        return { row, col, symbol };
     }
 
     applyAction(action_index) {
-        const {row, col, symbol} = this.indexToAction(action_index);
+        const { row, col, symbol } = this.indexToAction(action_index);
+
         if (this.board[row][col] !== null) {
             throw new Error("Invalid action: cell is not empty");
         }
+
         this.board[row][col] = symbol;
-        this.currentPlayer = this.currentPlayer === "ORDER" ? "CHAOS" : "ORDER";
+
+        // Toggle player
+        this.player *= -1;
     }
 
-    terminal() {
+    isTerminal() {
         const result = evaluateGame(this.board);
-        return { isTerminal: result.state !== "ONGOING", state: result.state };
-    }
 
+        if (result.state === "ORDER_WINS") {
+            return { terminal: true, winner: 1 };
+        }
+
+        if (result.state === "CHAOS_WINS") {
+            return { terminal: true, winner: -1 };
+        }
+
+        return { terminal: false, winner: 0 };
+    }
 }

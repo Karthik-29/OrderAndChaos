@@ -35,7 +35,7 @@ export default function App() {
 
             const aiGame = new OrderChaosGame();
             aiGame.board = cloneBoard(currentBoard);
-            aiGame.currentPlayer = AI_PLAYER;
+            aiGame.player = AI_PLAYER === "ORDER" ? 1 : -1;
 
             const aiActionIndex = await runMCTS(aiGame);
             const { row: aiRow, col: aiCol, symbol: aiSymbol } = aiGame.indexToAction(aiActionIndex);
