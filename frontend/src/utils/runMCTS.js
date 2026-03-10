@@ -111,7 +111,6 @@ export async function runMCTS(
 
     for (let i = 0; i < numSimulations; i++) {
         let node = root;
-
         // ---- Selection ----
         while (!node.isLeaf()) {
             const terminal = node.game.isTerminal();
