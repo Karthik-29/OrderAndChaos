@@ -1,4 +1,4 @@
-// frontend/utils/gameEvaluator.js
+// docs/utils/gameEvaluator.js
 
 const BOARD_SIZE = 5
 const WIN_LENGTH = 4
