@@ -6,7 +6,22 @@
 
 .app {
   --cell-size: 60px;
+  --board-line: rgba(255, 255, 255, 0.35);
+  --board-bg: rgba(255, 255, 255, 0.03);
+  --cell-bg: #1f1f1f;
+  --cell-border: rgba(255, 255, 255, 0.2);
+  --cell-hover-border: #7da2ff;
   text-align: left;
+}
+
+@media (prefers-color-scheme: light) {
+  .app {
+    --board-line: rgba(15, 23, 42, 0.35);
+    --board-bg: rgba(15, 23, 42, 0.05);
+    --cell-bg: #ffffff;
+    --cell-border: rgba(15, 23, 42, 0.28);
+    --cell-hover-border: #2563eb;
+  }
 }
 
 .status-line {
@@ -29,7 +44,12 @@
 
 .board-grid {
   display: grid;
-  gap: 6px;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--board-line);
+  border: 1px solid var(--board-line);
+  box-shadow: inset 0 0 0 1px var(--board-bg);
 }
 
 .board-cell {
@@ -40,6 +60,12 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+  background: var(--cell-bg);
+  border: 1px solid var(--cell-border);
+}
+
+.board-cell:hover:enabled {
+  border-color: var(--cell-hover-border);
 }
 
 .rules-card {
