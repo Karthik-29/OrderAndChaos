@@ -199,12 +199,12 @@ export default function App() {
                 <aside className="rules-card" aria-label="Rules">
                     <h3>Rules</h3>
                     <ul>
-                        <li>Order tries to get 4 in a row, column, or diagonal.</li>
+                        <li>Order tries to get 4 in a row, column, or diagonal of either {X_SYMBOL} or {O_SYMBOL}.</li>
                         <li>Chaos tries to stop Order from achieving this goal.</li>
-                        <li>Both players can use both symbols: X and O, Order always starts the game.</li>
+                        <li>Both players can use both symbols ({X_SYMBOL}, {O_SYMBOL}). Order always starts the game.</li>
                         <li>
                             Chaos wins when all 25 squares are filled without Order getting 4 in a row,
-                            column, or diagonal.
+                            column, or diagonal of either symbol.
                         </li>
                     </ul>
                     <p className="rules-note">Note: for now, the computer always plays as Order.</p>
