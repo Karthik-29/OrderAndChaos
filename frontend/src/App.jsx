@@ -191,7 +191,7 @@ export default function App() {
                         )}
                     </div>
                     <p className="status-line">
-                        Game status: <strong>{gameState}</strong>
+                        Game status: <strong>{gameState.replace("_", " ")}</strong>
                     </p>
                 </div>
 
