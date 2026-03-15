@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { evaluateGame } from "./utils/gameEvaluator.js";
 import { runMCTS } from "./utils/runMCTS.js";
 import { OrderChaosGame } from "./utils/OrderChaosGame.js";
+import "./App.css";
 
 const SIZE = 5;
 const HUMAN_PLAYER = "CHAOS";
@@ -117,17 +118,17 @@ export default function App() {
     }
 
     return (
-        <div style={{ padding: 20 }}>
+        <div className="app">
             <h2>Order & Chaos</h2>
-            <p>
+            <p className="status-line">
                 Turn: <strong>{currentPlayer}</strong>
             </p>
-            <p>
+            <p className="status-line">
                 You are <strong>{HUMAN_PLAYER}</strong>. AI is <strong>{AI_PLAYER}</strong>.
                 {isAiThinking ? " AI is thinking..." : ""}
             </p>
 
-            <div style={{ marginBottom: 12 }}>
+            <div className="control-row">
                 <button
                     onClick={handleUndo}
                     disabled={history.length === 0 || isAiThinking}
@@ -140,64 +141,73 @@ export default function App() {
                 <button
                     onClick={() => setSelectedSymbol(X_SYMBOL)}
                     disabled={isAiThinking || currentPlayer !== HUMAN_PLAYER || gameState !== "ONGOING"}
-                    style={{
-                        fontWeight: selectedSymbol === X_SYMBOL ? "bold" : "normal",
-                        marginRight: 6,
-                    }}
+                    className={selectedSymbol === X_SYMBOL ? "symbol-btn selected" : "symbol-btn"}
+                    style={{ marginRight: 6 }}
                 >
                     {X_SYMBOL}
                 </button>
                 <button
                     onClick={() => setSelectedSymbol(O_SYMBOL)}
                     disabled={isAiThinking || currentPlayer !== HUMAN_PLAYER || gameState !== "ONGOING"}
-                    style={{
-                        fontWeight: selectedSymbol === O_SYMBOL ? "bold" : "normal",
-                    }}
+                    className={selectedSymbol === O_SYMBOL ? "symbol-btn selected" : "symbol-btn"}
                 >
                     {O_SYMBOL}
                 </button>
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${SIZE}, 60px)`,
-                    gap: 6,
-                }}
-            >
-                {board.map((row, i) =>
-                    row.map((cell, j) => (
-                        <button
-                            key={`${i}-${j}`}
-                            onClick={() => handleClick(i, j)}
-                            disabled={
-                                isAiThinking ||
-                                gameState !== "ONGOING" ||
-                                currentPlayer !== HUMAN_PLAYER ||
-                                cell !== null
-                            }
-                            style={{
-                                width: 60,
-                                height: 60,
-                                fontSize: 24,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor:
-                                    isAiThinking ||
-                                    gameState !== "ONGOING" ||
-                                    currentPlayer !== HUMAN_PLAYER ||
-                                    cell !== null
-                                        ? "not-allowed"
-                                        : "pointer",
-                            }}
-                        >
-                            {cell}
-                        </button>
-                    ))
-                )}
+            <div className="game-layout">
+                <div className="board-section">
+                    <div
+                        className="board-grid"
+                        style={{
+                            gridTemplateColumns: `repeat(${SIZE}, var(--cell-size))`,
+                        }}
+                    >
+                        {board.map((row, i) =>
+                            row.map((cell, j) => (
+                                <button
+                                    key={`${i}-${j}`}
+                                    onClick={() => handleClick(i, j)}
+                                    disabled={
+                                        isAiThinking ||
+                                        gameState !== "ONGOING" ||
+                                        currentPlayer !== HUMAN_PLAYER ||
+                                        cell !== null
+                                    }
+                                    className="board-cell"
+                                    style={{
+                                        cursor:
+                                            isAiThinking ||
+                                            gameState !== "ONGOING" ||
+                                            currentPlayer !== HUMAN_PLAYER ||
+                                            cell !== null
+                                                ? "not-allowed"
+                                                : "pointer",
+                                    }}
+                                >
+                                    {cell}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                <aside className="rules-card" aria-label="Rules">
+                    <h3>Rules</h3>
+                    <ul>
+                        <li>Order tries to get 4 in a row, column, or diagonal.</li>
+                        <li>Chaos tries to stop Order from achieving this goal.</li>
+                        <li>Both players can use both symbols: X and O, Order always starts the game.</li>
+                        <li>
+                            Chaos wins when all 25 squares are filled without Order getting 4 in a row,
+                            column, or diagonal.
+                        </li>
+                    </ul>
+                    <p className="rules-note">Note: for now, the computer always plays as Order.</p>
+                </aside>
             </div>
-            <p>
+
+            <p className="status-line">
                 Game status: <strong>{gameState}</strong>
             </p>
         </div>

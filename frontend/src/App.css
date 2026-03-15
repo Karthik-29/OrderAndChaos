@@ -1,42 +1,83 @@
 #root {
-  max-width: 1280px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 1.25rem;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app {
+  --cell-size: 60px;
+  text-align: left;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.status-line {
+  margin: 0.3rem 0;
+}
+
+.control-row {
+  margin: 0.9rem 0 1rem;
+}
+
+.symbol-btn.selected {
+  font-weight: 700;
+}
+
+.game-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.board-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.board-cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.rules-card {
+  flex: 1;
+  min-width: 230px;
+  border: 1px solid rgba(125, 125, 125, 0.35);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.rules-card h3 {
+  margin: 0 0 0.45rem;
+}
+
+.rules-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.rules-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 768px) {
+  #root {
+    padding: 0.8rem;
   }
-  to {
-    transform: rotate(360deg);
+
+  .app {
+    --cell-size: 54px;
   }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .game-layout {
+    flex-direction: column;
   }
-}
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  .rules-card {
+    width: 100%;
+  }
 }
