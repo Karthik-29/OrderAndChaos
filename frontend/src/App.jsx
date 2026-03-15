@@ -190,7 +190,11 @@ export default function App() {
                             ))
                         )}
                     </div>
+                    <p className="status-line">
+                        Game status: <strong>{gameState}</strong>
+                    </p>
                 </div>
+
 
                 <aside className="rules-card" aria-label="Rules">
                     <h3>Rules</h3>
@@ -207,9 +211,7 @@ export default function App() {
                 </aside>
             </div>
 
-            <p className="status-line">
-                Game status: <strong>{gameState}</strong>
-            </p>
+
         </div>
     );
 }
