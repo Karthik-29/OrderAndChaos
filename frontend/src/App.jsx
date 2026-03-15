@@ -129,13 +129,6 @@ export default function App() {
             </p>
 
             <div className="control-row">
-                <button
-                    onClick={handleUndo}
-                    disabled={history.length === 0 || isAiThinking}
-                    style={{ marginRight: 12 }}
-                >
-                    Undo
-                </button>
 
                 <span>Symbol: </span>
                 <button
