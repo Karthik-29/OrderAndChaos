@@ -15,11 +15,11 @@ jobs:
         with:
           node-version: 18
 
-      - run: cd docs && npm install
-      - run: cd docs && npm run build
+      - run: cd frontend && npm install
+      - run: cd frontend && npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/dist
+          path: frontend/dist
 
       - uses: actions/deploy-pages@v4

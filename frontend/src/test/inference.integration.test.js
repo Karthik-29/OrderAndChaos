@@ -21,7 +21,7 @@ describe('inference integration (real ONNX model)', () => {
       game.board = board
       game.currentPlayer = "ORDER";
 
-    // Absolute path to the ONNX model in docs/public
+    // Absolute path to the ONNX model in frontend/public
     const modelPath = path.resolve(process.cwd(), 'public', 'maxwells_demon.onnx');
 
     const outputs = await runInference(game, modelPath)
